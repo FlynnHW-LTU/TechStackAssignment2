@@ -127,11 +127,21 @@ def login_required(route_fn):
     return wrapped
 
 
+def _allowed_cors_origins():
+    # comma-separated list; defaults cover Vite on 3000 (this repo) and 5173
+    raw = os.getenv(
+        "FRONTEND_ORIGIN",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
+    )
+    return {o.strip() for o in raw.split(",") if o.strip()}
+
+
 @app.after_request
 def add_basic_cors_headers(response):
-    # keep cors simple for frontend calls
-    origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
-    response.headers["Access-Control-Allow-Origin"] = origin
+    # echo request Origin only if allowlisted (required when not using Vite proxy)
+    origin = request.headers.get("Origin")
+    if origin in _allowed_cors_origins():
+        response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
@@ -290,6 +300,32 @@ def upload_profile_photo():
     users_col.update_one({"_id": user_id}, {"$set": {"profile_photo_path": save_path}})
     user_doc = users_col.find_one({"_id": user_id})
     return jsonify({"message": "profile photo uploaded", "profile": serialize_user(user_doc)})
+
+
+@app.delete("/api/profile/photo")
+@login_required
+def delete_profile_photo():
+    user_id = object_id_or_none(session.get("user_id"))
+    user_doc = users_col.find_one({"_id": user_id})
+    if not user_doc:
+        return jsonify({"error": "user not found"}), 404
+
+    old_path = user_doc.get("profile_photo_path") or ""
+    if old_path:
+        if os.path.isfile(old_path):
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass
+        elif os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], os.path.basename(old_path))):
+            try:
+                os.remove(os.path.join(app.config["UPLOAD_FOLDER"], os.path.basename(old_path)))
+            except OSError:
+                pass
+
+    users_col.update_one({"_id": user_id}, {"$set": {"profile_photo_path": ""}})
+    user_doc = users_col.find_one({"_id": user_id})
+    return jsonify({"message": "profile photo removed", "profile": serialize_user(user_doc)})
 
 
 @app.get("/uploads/<path:filename>")

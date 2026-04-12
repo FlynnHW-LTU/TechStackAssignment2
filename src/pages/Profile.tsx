@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export function Profile() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, updateProfile } = useAuth();
+  const { user, isAuthenticated, updateProfile, uploadProfilePhoto, deleteProfilePhoto } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -58,20 +58,16 @@ export function Profile() {
     setIsEditing(false);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Mock upload - convert to data URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, profilePhoto: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
+    const input = e.target;
+    if (!file) return;
+    await uploadProfilePhoto(file);
+    input.value = '';
   };
 
-  const handleDeletePhoto = () => {
-    setFormData(prev => ({ ...prev, profilePhoto: '' }));
+  const handleDeletePhoto = async () => {
+    await deleteProfilePhoto();
   };
 
   const addHobby = () => {

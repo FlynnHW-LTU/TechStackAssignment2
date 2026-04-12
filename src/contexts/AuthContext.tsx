@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { API_BASE, profilePhotoSrc } from '../config/apiBase';
 
 export interface User {
   id: string;
@@ -11,17 +12,22 @@ export interface User {
   profilePhoto?: string;
 }
 
+export type SignupResult =
+  | { success: true }
+  | { success: false; error: string };
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string) => Promise<SignupResult>;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  uploadProfilePhoto: (file: File) => Promise<boolean>;
+  deleteProfilePhoto: () => Promise<boolean>;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 function mapApiUser(apiUser: any): User {
   // map backend user shape to frontend shape
@@ -31,7 +37,7 @@ function mapApiUser(apiUser: any): User {
     fullName: apiUser.full_name || '',
     hobbies: apiUser.hobbies || [],
     skills: apiUser.skills || [],
-    profilePhoto: apiUser.profile_photo_path || '',
+    profilePhoto: profilePhotoSrc(apiUser.profile_photo_path) || '',
     // optional fields can be missing from backend
     pronouns: apiUser.pronouns || '',
     phone: apiUser.phone || '',
@@ -76,8 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string): Promise<boolean> => {
-    // call backend register and set active user
+  const signup = async (email: string, password: string): Promise<SignupResult> => {
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
@@ -85,12 +90,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
-      if (!res.ok) return false;
-      const data = await res.json();
+      let data: { user?: unknown; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // non-json body
+      }
+      if (!res.ok) {
+        const msg =
+          typeof data.error === 'string' && data.error.trim()
+            ? data.error
+            : 'Registration failed. Please try again.';
+        return { success: false, error: msg };
+      }
       setUser(mapApiUser(data.user));
-      return true;
+      return { success: true };
     } catch {
-      return false;
+      return {
+        success: false,
+        error: 'Could not reach the server. Check that the API is running and try again.',
+      };
     }
   };
 
@@ -129,6 +148,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const uploadProfilePhoto = async (file: File): Promise<boolean> => {
+    if (!user) return false;
+    const body = new FormData();
+    body.append('photo', file);
+    try {
+      const res = await fetch(`${API_BASE}/profile/photo`, {
+        method: 'POST',
+        body,
+        credentials: 'include',
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setUser(mapApiUser(data.profile));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const deleteProfilePhoto = async (): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const res = await fetch(`${API_BASE}/profile/photo`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setUser(mapApiUser(data.profile));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -137,6 +191,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         updateProfile,
+        uploadProfilePhoto,
+        deleteProfilePhoto,
         isAuthenticated: !!user,
       }}
     >

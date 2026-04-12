@@ -29,8 +29,8 @@ export function SignUp() {
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
     }
 
     // Confirm password validation
@@ -52,21 +52,36 @@ export function SignUp() {
     }
 
     setLoading(true);
-    const success = await signup(formData.email, formData.password);
+    const result = await signup(formData.email, formData.password);
     setLoading(false);
 
-    if (success) {
+    if (result.success) {
       navigate('/profile');
     } else {
-      setErrors({ email: 'An account with this email already exists' });
+      const lower = result.error.toLowerCase();
+      let key: 'email' | 'password' | 'form' = 'form';
+      if (
+        lower.includes('already registered') ||
+        lower.includes('already exists')
+      ) {
+        key = 'email';
+      } else if (lower.includes('password')) {
+        key = 'password';
+      } else if (lower.includes('email')) {
+        key = 'email';
+      }
+      setErrors(key === 'form' ? { form: result.error } : { [key]: result.error });
     }
   };
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field] || errors.form) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: '',
+        ...(prev.form ? { form: '' } : {}),
+      }));
     }
   };
 
@@ -82,6 +97,12 @@ export function SignUp() {
 
         <div className="backdrop-blur-xl bg-white/60 rounded-2xl border border-white/20 shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {errors.form && (
+              <div className="flex items-center text-red-600 text-sm rounded-xl border border-red-200 bg-red-50/80 px-4 py-3">
+                <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+                {errors.form}
+              </div>
+            )}
             {/* Email */}
             <div>
               <label htmlFor="email" className="block mb-2">
@@ -118,7 +139,7 @@ export function SignUp() {
                 className={`w-full px-4 py-2 backdrop-blur-sm bg-white/50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                   errors.password ? 'border-red-500' : 'border-white/30'
                 }`}
-                placeholder="Minimum 6 characters"
+                placeholder="Minimum 8 characters"
               />
               {errors.password && (
                 <div className="mt-2 flex items-center text-red-600 text-sm">

@@ -51,9 +51,12 @@ Another issue I found was with the IDs. MongoDB uses ObjectID, but the JSON and 
 # Entity Relationship Diagram
 Below is the ERD for the database
 ![](img/erd.png)
+(if the image doesn't embed, it can be found in /img/erd.png)
 In conclusion, I believe that I have made a back-end that should work on most devices. It holds most of the requirements for a full back-end setup for a skill share website.
 # Resources Used
 Flask-PyMongo — Flask-PyMongo 2.3.0 documentation. (n.d.). Flask-Pymongo.readthedocs.io. https://flask-pymongo.readthedocs.io/en/latest/
 
 Team, M. D. (2025). Development. Mongodb.com. https://www.mongodb.com/docs/development/
 1. Werkzeug Tutorial — Flask API. (2026). Github.io. https://tedboy.github.io/flask/werk_doc.tutorial.html
+# AI Usage Disclosure
+AI was used to explain the assignment brief and assisting debugging.

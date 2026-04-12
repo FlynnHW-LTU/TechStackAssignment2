@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { API_BASE } from '../config/apiBase';
 
 export interface Resource {
   id: string;
@@ -42,7 +43,6 @@ interface DataContextType {
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 const initialCategories: Category[] = [
   { id: 'coding', name: 'Coding', description: 'Programming tutorials and resources', icon: 'Code' },
