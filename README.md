@@ -52,7 +52,7 @@ I faced a very wide variety of issues connecting MongoDB and flask. I faced a lo
 Another issue I found was with the IDs. MongoDB uses ObjectID, but the JSON and the react app (which my front end was using) was using strings.
 # Entity Relationship Diagram
 Below is the ERD for the database
-![img/erd.png]
+![The ERD](img/erd.png)
 (if the image doesn't embed, it can be found in /img/erd.png)
 In conclusion, I believe that I have made a back-end that should work on most devices. It holds most of the requirements for a full back-end setup for a skill share website.
 # Resources Used
