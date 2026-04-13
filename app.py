@@ -128,7 +128,7 @@ def login_required(route_fn):
 
 
 def _allowed_cors_origins():
-    # comma-separated list; defaults cover Vite on 3000 (this repo) and 5173
+    # comma-separated list, vite should be on this
     raw = os.getenv(
         "FRONTEND_ORIGIN",
         "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
@@ -138,7 +138,7 @@ def _allowed_cors_origins():
 
 @app.after_request
 def add_basic_cors_headers(response):
-    # echo request Origin only if allowlisted (required when not using Vite proxy)
+    # echo request Origin only if allowlisted
     origin = request.headers.get("Origin")
     if origin in _allowed_cors_origins():
         response.headers["Access-Control-Allow-Origin"] = origin
