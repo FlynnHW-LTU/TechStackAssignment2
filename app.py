@@ -1,4 +1,4 @@
-import os
+import os # i wouldn't need this for an actual server, but for an mvp its fine
 from datetime import datetime
 from functools import wraps
 from bson import ObjectId
@@ -310,7 +310,7 @@ def delete_profile_photo():
     if not user_doc:
         return jsonify({"error": "user not found"}), 404
 
-    old_path = user_doc.get("profile_photo_path") or ""
+    old_path = user_doc.get("profile_photo_path") or "" # this entire bit should not normally be done, but a locally hosted project should get away with it
     if old_path:
         if os.path.isfile(old_path):
             try:
@@ -597,7 +597,7 @@ def create_skill_request():
 
 @app.get("/api/skill-requests")
 def list_skill_requests():
-    # list requests sorted by votes
+    # sort by upvotes
     docs = list(skill_requests_col.find().sort("upvotes_count", DESCENDING))
     return jsonify({"skill_requests": [serialize_skill_request(d) for d in docs]})
 
@@ -629,19 +629,6 @@ def vote_skill_request(request_id):
 
     updated = skill_requests_col.find_one({"_id": request_obj_id})
     return jsonify({"message": "vote updated", "skill_request": serialize_skill_request(updated)})
-
-
-@app.errorhandler(404)
-def not_found_error(error):
-    # central 404 handler
-    return jsonify({"error": "route not found"}), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    # central 500 handler
-    return jsonify({"error": "internal server error"}), 500
-
 
 if __name__ == "__main__": # actually run the thing
     ensure_indexes()
